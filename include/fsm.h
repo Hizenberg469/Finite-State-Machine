@@ -1,14 +1,20 @@
 #ifndef __FSM__
 #define __FSM__
 
-typedef struct fsm_ fsm_t;
-typedef struct state_ state_t;
 
-#define MAX_INP_BUFFER_SIZE         128
+/***Constants***/
+
+#define MAX_INP_BUFFER_LEN          128
 #define MAX_TRANSITION_TABLE_SIZE   128
 #define MAX_STATE_NAME_SIZE         32
 #define MAX_FSM_NAME_SIZE           32
 #define MAX_TRANSITION_KEY_SIZE     64
+
+
+/***Data structures and custom datatypes***/
+
+typedef struct fsm_ fsm_t;
+typedef struct state_ state_t;
 
 /*Custom-defined datatype
 * to define boolean value
@@ -67,11 +73,61 @@ struct fsm_{
 
     /*Input data fed by application to parse
     * by FSM library*/
+    char input_buffer[MAX_INP_BUFFER_LEN];
+
+    /*Size of input buffer*/
     unsigned int input_buffer_size;
 
     /*Pointer which point to the current input
     * from input buffer*/
     unsigned int input_buffer_cursor;
 };
+
+
+/***Function Prototypes***/
+
+fsm_t*
+create_new_fsm(const char *fsm_name);
+
+state_t*
+create_new_state(char *state_name,
+                    fsm_bool_t is_final);
+
+void
+set_fsm_initial_state(fsm_t *fsm, state_t *state);
+
+tt_entry_t*
+create_and_insert_new_tt_entry(tt_t *trans_table,
+                                char *transition_key,
+                                unsigned int sizeof_key,
+                                state_t* next_state);
+
+
+tt_entry_t*
+get_next_empty_tt_entry(tt_t *trans_table);
+
+/**static(hidden) functions***/
+static inline fsm_bool_t
+is_tt_entry_empty(tt_entry_t *tt_entry){
+
+    if(!tt_entry->next_state)
+        return FSM_TRUE;
+
+    return FSM_FALSE;
+}
+
+
+
+/***Iterators' Macro***/
+
+#define FSM_ITERATE_TRANS_TABLE_BEGIN(tr_table_ptr, tt_entry_ptr)   \
+    do{                                                             \
+        unsigned int index = 0;                                     \
+        for( ; index < MAX_TRANSITION_TABLE_SIZE ; index++ ){       \
+            tt_entry_ptr = &(tr_table_ptr->tt_entry[index]);
+
+#define FSM_ITERATE_TRANS_TABLE_END(tr_table_ptr, tt_entry_ptr)     \
+        }                                                           \
+    }while(0);
 
 #endif
