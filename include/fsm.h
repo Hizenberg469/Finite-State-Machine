@@ -9,6 +9,8 @@
 #define MAX_STATE_NAME_SIZE         32
 #define MAX_FSM_NAME_SIZE           32
 #define MAX_TRANSITION_KEY_SIZE     64
+#define MAX_ALP_BUFFER_SIZE         30
+#define MAX_FINAL_STATE             128
 
 
 /***Data structures and custom datatypes***/
@@ -61,12 +63,24 @@ struct state_{
     /*Boolean value to distinguish b/w 
     * accept/final state or vice-versa*/
     fsm_bool_t is_final;
+
+    /*FSM which the current state belongs to*/
+    char fsm[MAX_FSM_NAME_SIZE];
 };
 
 struct fsm_{
 
     /*Initial state of FSM to start with*/
     state_t *initial_state;
+
+    /*Number of states in FSM*/
+    unsigned int state_count;
+
+    /*Set of alphabet*/
+    char alphabet[MAX_ALP_BUFFER_SIZE];
+
+    /*Set of final/accept states*/
+    char final_states[MAX_FINAL_STATE];
 
     /*Name of FSM*/
     char fsm_name[MAX_FSM_NAME_SIZE];
@@ -87,18 +101,20 @@ struct fsm_{
 /***Function Prototypes***/
 
 fsm_t*
-create_new_fsm(const char *fsm_name);
+create_new_fsm(const char *fsm_name, const char *inp_alpha);
 
 state_t*
-create_new_state(char *state_name,
-                    fsm_bool_t is_final);
+create_new_state(const char *state_name,
+                    fsm_bool_t is_final,
+                    const char *fsm_name,
+                    fsm_t *fsm);
 
 void
 set_fsm_initial_state(fsm_t *fsm, state_t *state);
 
 tt_entry_t*
 create_and_insert_new_tt_entry(tt_t *trans_table,
-                                char *transition_key,
+                                const char *transition_key,
                                 unsigned int sizeof_key,
                                 state_t* next_state);
 
@@ -110,7 +126,7 @@ get_next_empty_tt_entry(tt_t *trans_table);
 static inline fsm_bool_t
 is_tt_entry_empty(tt_entry_t *tt_entry){
 
-    if(!tt_entry->next_state)
+    if( tt_entry != NULL && !tt_entry->next_state)
         return FSM_TRUE;
 
     return FSM_FALSE;

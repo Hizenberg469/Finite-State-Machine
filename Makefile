@@ -1,26 +1,12 @@
 #Setting a default configuration if invoked with just "make":
-CFG ?= debug
+CFG?=debug
 
 # Config specific settings
 ifeq ($(CFG),debug)
-CFLAGS += -g -DDEBUG
+	CFLAGS=-g -DDEBUG
 else
-CFLAGS += -O3 -DNDEBUG
+	CFLAGS=-O3 -DNDEBUG
 endif
-
-inform:
-ifneq ($(CFG),release)
-ifneq ($(CFG),debug)
-	@echo "Invalid configuration "$(CFG)" specified."
-	@echo
-	@echo "Possible choices for configuration are 'CFG=release' and 'CFG=debug'"
-	@exit 1
-endif
-endif
-	@echo "Configuration "$(CFG)
-	@echo "--------------------------------------------------"
-
-rule : dep | inform
 
 BUILD_DIR=bin/$(CFG)
 OBJS_DIR=objs/$(CFG)
@@ -31,25 +17,49 @@ SRCDIR=src
 
 APP=$(BUILD_DIR)/app
 APP_OBJECT=$(OBJS_DIR)/app.o
+APP_DEPFILES=$(OBJS_DIR)/app.d
 FSMLIB_NAME=fsm
 FSMLIB=$(LIBDIR)/lib$(FSMLIB_NAME)
-CODEDIRS=./src
-INCDIRS=. ./include/ # can be list
+CODEDIRS=src
+INCDIRS=./ ./include/ # can be list
 
 CC=gcc
-OPT=-O0
 #generate files that encode make rules for the .h dependencies
-DEPFLAGS=-MP -MD
+DEPFLAGS=-MMD -MP
 #automatically add the -I onto each include directory
-CFLAGS+=-Wall -Wextra $(foreach D,$(INCDIRS),-I$(D)) $(OPT) $(DEPFLAGS)
+CFLAGS+=-Wall -Wextra $(foreach D , $(INCDIRS) , -I$(D)) $(DEPFLAGS)
 
 # for-style iteration (foreach) and regular expression completions (wildcard)
-CFILES=$(foreach D, $(CODEDIRS),$(wildcard $(D)/*.c))
-# regular expression replacement
-OBJECTS=$(patsubst %.c,$(OBJS_DIR)/%.o,$(CFILES))
-DEPFILES=$(patsubst %.c,$(OBJS_DIR)/%.d,$(CFILES))
+CFILES=$(foreach D , $(CODEDIRS) , $(wildcard $(D)/*.c))
 
-all: $(FSMLIB) $(APP) | create_dir
+
+#WTF, this below code is f**ked me up.
+#didn't change anything but still works.
+#WHYYY???
+# regular expression replacement
+OBJECTS=$(patsubst $(SRCDIR)/%.c, $(OBJS_DIR)/%.o , $(CFILES))
+DEPFILES=$(patsubst $(SRCDIR)/%.c, $(OBJS_DIR)/%.d , $(CFILES))
+DEPFILES += $(APP_DEPFILES)
+
+# $(info CFILES: $(CFILES))
+# $(info OBJECTS: $(OBJECTS))
+# $(info DEPFILES: $(DEPFILES))
+# $(info APP_OBJECT: $(APP_OBJECT))
+# $(info APP_DEPFILES: $(APP_DEPFILES))
+
+all: create_dir inform $(FSMLIB) $(APP)
+
+inform:
+ifneq ($(CFG),release)
+ifneq ($(CFG),debug)
+	@echo "Invalid configuration $(CFG) specified."
+	@echo
+	@echo "Possible choices for configuration are 'CFG=release' and 'CFG=debug'"
+	@exit 1
+endif
+endif
+	@echo "Configuration $(CFG)"
+	@echo "--------------------------------------------------"
 
 create_dir:
 	mkdir -p $(BUILD_DIR)
@@ -57,18 +67,18 @@ create_dir:
 	mkdir -p $(LIBDIR)
 
 
-$(APP): $(APP_OBJECT) | create_dir
-	$(CC) -o $@ $^ -L $(LIBDIR) -l$(FSMLIB_NAME)
+$(APP): $(APP_OBJECT) $(FSMLIB).a
+	$(CC) -o $@ $^ -L$(LIBDIR) -l$(FSMLIB_NAME)
 
-$(FSMLIB): $(OBJECTS) | create_dir
-	ar cr $(LIBDIR)/${FSMLIB}.a ${OBJECTS}
+$(FSMLIB): $(OBJECTS)
+	ar cr $(FSMLIB).a $(OBJECTS)
 
 # only want the .c file dependency here, thus $< instead of $^.
 #
-$(OBJS_DIR)/%.o:$(SRCDIR)/%.c | create_dir
+$(OBJS_DIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(OBJS_DIR)/%.o:%.c | create_dir
+$(OBJS_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:

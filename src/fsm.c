@@ -1,29 +1,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <assert.h>
 #include "fsm.h"
 
-fsm_t*
-create_new_fsm(const char* fsm_name)
+fsm_t *
+create_new_fsm(const char* fsm_name, const char *inp_alpha)
 {
 
     fsm_t *fsm = calloc(1, sizeof(fsm_t));
-    strncpy(fsm->fsm_name, fsm_name, MAX_FSM_NAME_SIZE - 1 );
-    fsm->fsm_name[MAX_FSM_NAME_SIZE] = '\0';
+    strncpy(fsm->fsm_name, fsm_name, strlen(fsm_name) );
+    fsm->fsm_name[strlen(fsm_name)] = '\0';
+    fsm->state_count = 0;
+    
+    strncpy(fsm->alphabet, inp_alpha, strlen(inp_alpha));
+    fsm->alphabet[strlen(inp_alpha)] = '\0';
+
+    memset(fsm->final_states, 0, 1);
+    memset(fsm->input_buffer, 0, 1);
+    fsm->input_buffer_cursor = 0;
+    fsm->input_buffer_size = 0;
     return fsm;
 
 }
 
-state_t*
-create_new_state(char *state_name,
-                    fsm_bool_t is_final){
+state_t *
+create_new_state(const char *state_name,
+                    fsm_bool_t is_final,
+                    const char *fsm_name,
+                    fsm_t *fsm){
 
     assert(state_name);
 
     state_t *state = calloc(1, sizeof(state_t));
 
-    strncpy(state->state_name, state_name, MAX_STATE_NAME_SIZE - 1);
-    state->state_name[MAX_STATE_NAME_SIZE] = '\0';
+    strncpy(state->state_name, state_name, strlen(state_name));
+    state->state_name[strlen(state_name)] = '\0';
 
     tt_t *trans_table = &(state->state_trans_table);
     tt_entry_t *tt_entry_ptr = NULL;
@@ -33,6 +45,21 @@ create_new_state(char *state_name,
     }FSM_ITERATE_TRANS_TABLE_END(trans_table, tt_entry_ptr)
 
     state->is_final = is_final;
+
+    char temp_state_name[strlen(state_name)+2];
+    strncpy(temp_state_name, state_name, strlen(state_name));
+    temp_state_name[strlen(state_name)] = '\0';
+
+    if(state->is_final == FSM_TRUE){
+        strcat(temp_state_name,",");
+        strcat(fsm->final_states,temp_state_name);
+    }
+    // fsm->final_states[strlen(fsm->final_states)+2] = '\0';
+
+    strncpy(state->fsm, fsm_name, strlen(fsm_name));
+    state->fsm[strlen(fsm_name)] = '\0';
+
+    fsm->state_count++;
 
     return state;
 }
@@ -45,7 +72,7 @@ set_fsm_initial_state(fsm_t *fsm, state_t *state){
 }
 
 
-tt_entry_t*
+tt_entry_t *
 get_next_empty_tt_entry(tt_t *trans_table){
 
     tt_entry_t* tt_entry_ptr = NULL;
@@ -64,9 +91,9 @@ get_next_empty_tt_entry(tt_t *trans_table){
     return NULL;
 }
 
-tt_entry_t*
+tt_entry_t *
 create_and_insert_new_tt_entry(tt_t *trans_table,
-                                char *transition_key,
+                                const char *transition_key,
                                 unsigned int sizeof_key,
                                 state_t* next_state){
 
