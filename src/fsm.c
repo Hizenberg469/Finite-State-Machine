@@ -5,7 +5,7 @@
 #include "fsm.h"
 
 fsm_t *
-create_new_fsm(const char* fsm_name, const char *inp_alpha)
+create_new_fsm(const char* fsm_name, const char *inp_alpha, unsigned int alpha_count)
 {
 
     fsm_t *fsm = calloc(1, sizeof(fsm_t));
@@ -20,6 +20,8 @@ create_new_fsm(const char* fsm_name, const char *inp_alpha)
     memset(fsm->input_buffer, 0, 1);
     fsm->input_buffer_cursor = 0;
     fsm->input_buffer_size = 0;
+    fsm->alphabet_count = alpha_count;
+
     return fsm;
 
 }
@@ -113,4 +115,216 @@ create_and_insert_new_tt_entry(tt_t *trans_table,
     tt_entry_ptr->next_state = next_state;
 
     return tt_entry_ptr;
+}
+
+
+static state_t *
+transition(state_t *curr_state, char *input_buffer, unsigned int *inp_ptr){
+
+    assert(curr_state); // To check if curr_state is not NULL.
+    assert(input_buffer); // To check input_buffer is not NULL.
+
+    unsigned int rem_len_inp_buf = strlen(input_buffer);
+
+    tt_t *trans_table = &(curr_state->state_trans_table);
+
+    tt_entry_t *entry_ptr = NULL;
+
+    state_t *next_state = NULL;
+    FSM_ITERATE_TRANS_TABLE_BEGIN( trans_table, entry_ptr ){
+        if( entry_ptr->transition_key_size <= rem_len_inp_buf &&
+            strncmp(entry_ptr->transition_key,
+            input_buffer + *inp_ptr,
+            entry_ptr->transition_key_size) == 0 &&
+            is_tt_entry_empty(entry_ptr) == FSM_FALSE ){
+
+            next_state = entry_ptr->next_state;
+            *inp_ptr += entry_ptr->transition_key_size;
+            break;
+        }
+    }FSM_ITERATE_TRANS_TABLE_END( trans_table, entry_ptr)
+
+    return next_state;
+}
+
+
+fsm_error_t
+execute_fsm(fsm_t *fsm,
+            char *input_buffer,
+            unsigned int size,
+            fsm_bool_t *fsm_result){
+
+    fsm_error_t algo_output = FSM_NO_ERROR;
+
+    char *buffer_to_parse;
+    unsigned int input_buffer_len = 0; // length of input buffer being used
+    fsm->input_buffer_cursor = 0;
+    
+    state_t *curr_state = NULL; /*Pointer to the current state
+                                    of given FSM*/
+    curr_state = fsm->initial_state;
+    
+    state_t *next_state = NULL;
+
+    /*FSM has a problem.
+      It don't has any initial
+      state.*/
+
+    if( curr_state == NULL ){
+        printf("FSM is not programmed correctly.\n \
+FSM don't have an initial state.\n");
+        algo_output = FSM_NO_TRANSITION;
+        
+        return algo_output;
+    }
+
+    /*Use buffer sent by applicaton*/
+    if( input_buffer && size > 0 ){
+        buffer_to_parse = input_buffer;
+        input_buffer_len = size;
+    }
+    else{
+    /*Use buffer set to fsm by application*/
+        buffer_to_parse = fsm->input_buffer;
+        input_buffer_len = fsm->input_buffer_size;
+    }
+
+
+    if( input_buffer_len != strlen(buffer_to_parse) ){
+        
+        printf("Size of input buffer given and actual size of input buffer is different\n");
+
+        algo_output = FSM_NO_TRANSITION;
+        return algo_output;
+    }
+
+    while( fsm->input_buffer_cursor < input_buffer_len ){
+
+        next_state = transition(curr_state, buffer_to_parse, &fsm->input_buffer_cursor);  // Transition function
+                                                            // to get to next state
+                                                            // for current input 
+                                                            // symbol if it exist.
+
+        if( next_state == NULL ){
+            printf("Somthing went wrong!!\n \
+The next state for the current state (%s) and remaining input \
+string (%s) with current input pointer at (%u) is NULL\n \
+This means either there is no transition for the current input \
+symbol or the next state for the current input symbol is NULL\n \
+For both case, the FSM is programmed not correctly.\n", curr_state->state_name,
+                                                        buffer_to_parse + fsm->input_buffer_cursor,
+                                                        fsm->input_buffer_cursor);
+            
+            algo_output = FSM_NO_TRANSITION;
+            return algo_output;
+        }
+
+        //update...
+        curr_state = next_state;
+        next_state = NULL;
+
+    }
+
+    //Now, the input buffer is processed without any issue.
+    //Therefore, there is no transition error.
+
+    algo_output = FSM_NO_ERROR;
+    //Checking if the curr_state is accept state or not.
+
+    if( curr_state->is_final == FSM_TRUE){
+        *fsm_result = FSM_TRUE;
+    }
+    else{
+        *fsm_result = FSM_FALSE;
+    }
+
+    return algo_output;
+}
+
+void
+print_fsm(fsm_t *fsm){
+
+    char state[6];
+    char input[fsm->alphabet_count][6];
+    char next_state[fsm->alphabet_count + 1][6];
+
+    memset(state, '\0', sizeof state);
+    for(unsigned int i = 0 ; i < fsm->alphabet_count ; i++ ){
+        memset(input[i], '\0', sizeof input[i]);
+        memset(next_state[i], '\0', sizeof next_state[i]);
+    }
+
+    char alpha[strlen(fsm->alphabet)+1];
+    memset(alpha , 0, strlen(fsm->alphabet)+1);
+    strncpy(alpha, fsm->alphabet, strlen(fsm->alphabet)+1);
+    int i = 0;
+    char *ch = NULL;
+    ch = strtok(alpha, ",");
+    do{
+        strncpy(input[i++],ch,strlen(ch)); 
+    }while( (ch = strtok(NULL, ",")) );
+    
+    printf("FSM name : %s\n", fsm->fsm_name);
+    printf("Alphabets : %s\n", fsm->alphabet);
+    printf("States : ");
+    for(unsigned int i = 0 ; i < fsm->state_count ; i++ ){
+        sprintf(state,"q%d",i);
+        printf("%s", state);
+
+        if( i < fsm->state_count - 1 )
+            printf(", ");
+    }
+    putchar('\n');
+
+    printf("Initial State : %s\n", fsm->initial_state->state_name);
+    printf("Final States : %s\n", fsm->final_states);
+
+    printf("Transition Table :\n");
+
+    //Header line
+    printf("         "space"|");
+    for(unsigned int i = 0 ; i < fsm->alphabet_count ; i++ ){
+        printf(space"%5s",input[i]);
+    }
+    putchar('\n');
+    printf("--------------");
+    for(unsigned int i = 0 ; i < fsm->alphabet_count ; i++ )
+        printf("---------");
+    printf("---------\n");
+    
+    
+
+    tt_t *table_ptr = NULL;
+    tt_entry_t *entry_ptr = NULL;
+    for( unsigned int i = 0 ; i < fsm->state_count ; i++ ){
+    
+        strncpy(next_state[0], fsm->states[i]->state_name, 
+                strlen(fsm->states[i]->state_name));
+
+        table_ptr = &(fsm->states[i]->state_trans_table);
+        FSM_ITERATE_TRANS_TABLE_BEGIN(table_ptr, entry_ptr){
+            
+            if( is_tt_entry_empty(entry_ptr) == FSM_FALSE ){
+                for(unsigned int j = 0 ; j < fsm->alphabet_count ; j++ ){
+                    if( strncmp(entry_ptr->transition_key, input[j],
+                                entry_ptr->transition_key_size) == 0){
+                        
+                        strncpy(next_state[j+1], entry_ptr->next_state->state_name,
+                                strlen(entry_ptr->next_state->state_name));
+                    }
+                }
+            }
+
+        }FSM_ITERATE_TRANS_TABLE_END(table_ptr, entry_ptr)
+
+        printf(space"%5s"space"|", next_state[0]);
+        memset(next_state[0], '\0', sizeof state[0]);
+        for(unsigned int k = 0 ; k < fsm->alphabet_count ; k++ ){
+            printf(space"%5s", next_state[k+1]);
+            memset(next_state[k+1], '\0', sizeof next_state[k+1]);
+        }
+        putchar('\n');
+   
+    }
+
 }

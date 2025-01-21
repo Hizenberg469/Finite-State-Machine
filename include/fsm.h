@@ -4,6 +4,9 @@
 
 /***Constants***/
 
+
+#define space "    " // 4 ws
+
 #define MAX_INP_BUFFER_LEN          128
 #define MAX_TRANSITION_TABLE_SIZE   128
 #define MAX_STATE_NAME_SIZE         32
@@ -11,6 +14,7 @@
 #define MAX_TRANSITION_KEY_SIZE     64
 #define MAX_ALP_BUFFER_SIZE         30
 #define MAX_FINAL_STATE             128
+#define MAX_NUM_OF_STATES           128
 
 
 /***Data structures and custom datatypes***/
@@ -27,6 +31,13 @@ typedef enum{
     FSM_TRUE
 
 }fsm_bool_t;
+
+typedef enum{
+
+    FSM_NO_TRANSITION,
+    FSM_NO_ERROR
+
+}fsm_error_t;
 
 
 /*This data structure act similar 
@@ -73,11 +84,17 @@ struct fsm_{
     /*Initial state of FSM to start with*/
     state_t *initial_state;
 
+    /*Number of States*/
+    state_t *states[MAX_NUM_OF_STATES];
+
     /*Number of states in FSM*/
     unsigned int state_count;
 
     /*Set of alphabet*/
     char alphabet[MAX_ALP_BUFFER_SIZE];
+
+    /*Count of No. of alphabets*/
+    unsigned int alphabet_count;
 
     /*Set of final/accept states*/
     char final_states[MAX_FINAL_STATE];
@@ -101,7 +118,7 @@ struct fsm_{
 /***Function Prototypes***/
 
 fsm_t*
-create_new_fsm(const char *fsm_name, const char *inp_alpha);
+create_new_fsm(const char *fsm_name, const char *inp_alpha, unsigned int alpha_count);
 
 state_t*
 create_new_state(const char *state_name,
@@ -121,6 +138,16 @@ create_and_insert_new_tt_entry(tt_t *trans_table,
 
 tt_entry_t*
 get_next_empty_tt_entry(tt_t *trans_table);
+
+fsm_error_t
+execute_fsm(fsm_t *fsm,
+            char *input_buffer,
+            unsigned int size,
+            fsm_bool_t *fsm_result);
+
+
+void
+print_fsm(fsm_t *fsm);
 
 /**static(hidden) functions***/
 static inline fsm_bool_t
