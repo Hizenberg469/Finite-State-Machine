@@ -97,6 +97,7 @@ tt_entry_t *
 create_and_insert_new_tt_entry(tt_t *trans_table,
                                 const char *transition_key,
                                 unsigned int sizeof_key,
+                                output_fn outpfn,
                                 state_t* next_state){
 
     
@@ -113,13 +114,15 @@ create_and_insert_new_tt_entry(tt_t *trans_table,
     tt_entry_ptr->transition_key[sizeof_key] = '\0';
     tt_entry_ptr->transition_key_size = sizeof_key;
     tt_entry_ptr->next_state = next_state;
+    tt_entry_ptr->outp_fn = outpfn;
 
     return tt_entry_ptr;
 }
 
 
 static state_t *
-transition(state_t *curr_state, char *input_buffer, unsigned int *inp_ptr){
+transition(state_t *curr_state, char *input_buffer, unsigned int *inp_ptr,
+            fsm_output_buff_t *output_buffer){
 
     assert(curr_state); // To check if curr_state is not NULL.
     assert(input_buffer); // To check input_buffer is not NULL.
@@ -139,6 +142,14 @@ transition(state_t *curr_state, char *input_buffer, unsigned int *inp_ptr){
             is_tt_entry_empty(entry_ptr) == FSM_FALSE ){
 
             next_state = entry_ptr->next_state;
+
+            if( entry_ptr->outp_fn ){
+                entry_ptr->outp_fn(curr_state,
+                                    next_state,
+                                    input_buffer + *inp_ptr,
+                                    entry_ptr->transition_key_size,
+                                    output_buffer);
+            }
             *inp_ptr += entry_ptr->transition_key_size;
             break;
         }
@@ -152,6 +163,7 @@ fsm_error_t
 execute_fsm(fsm_t *fsm,
             char *input_buffer,
             unsigned int size,
+            fsm_output_buff_t *output_buffer, /*output buffer to write data into*/
             fsm_bool_t *fsm_result){
 
     fsm_error_t algo_output = FSM_NO_ERROR;
@@ -198,9 +210,18 @@ FSM don't have an initial state.\n");
         return algo_output;
     }
 
+    /*If application has not supplied output buffer,
+    * Use FSM's internal output buffer*/
+    if(!output_buffer){
+        output_buffer = &fsm->fsm_output_buff;
+    }
+
+    init_fsm_output_buffer(output_buffer);
+
     while( fsm->input_buffer_cursor < input_buffer_len ){
 
-        next_state = transition(curr_state, buffer_to_parse, &fsm->input_buffer_cursor);  // Transition function
+        next_state = transition(curr_state, buffer_to_parse, &fsm->input_buffer_cursor,
+                                output_buffer);  // Transition function
                                                             // to get to next state
                                                             // for current input 
                                                             // symbol if it exist.
@@ -232,10 +253,12 @@ For both case, the FSM is programmed not correctly.\n", curr_state->state_name,
     //Checking if the curr_state is accept state or not.
 
     if( curr_state->is_final == FSM_TRUE){
-        *fsm_result = FSM_TRUE;
+        if( fsm_result )
+            *fsm_result = FSM_TRUE;
     }
     else{
-        *fsm_result = FSM_FALSE;
+        if( fsm_result )
+            *fsm_result = FSM_FALSE;
     }
 
     return algo_output;
@@ -327,4 +350,11 @@ print_fsm(fsm_t *fsm){
    
     }
 
+}
+
+
+void
+init_fsm_output_buffer(fsm_output_buff_t *fsm_output_buff){
+    memset(fsm_output_buff->output_buffer, 0, MAX_FSM_OUTPUT_BUFFER);
+    fsm_output_buff->curr_pos = 0;
 }

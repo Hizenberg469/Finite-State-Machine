@@ -15,12 +15,20 @@
 #define MAX_ALP_BUFFER_SIZE         30
 #define MAX_FINAL_STATE             128
 #define MAX_NUM_OF_STATES           128
+#define MAX_FSM_OUTPUT_BUFFER       1024
 
 
 /***Data structures and custom datatypes***/
 
 typedef struct fsm_ fsm_t;
 typedef struct state_ state_t;
+typedef struct fsm_output_buff_ fsm_output_buff_t;
+
+/**Function Pointer**/
+
+typedef void (*output_fn)(state_t *, state_t *,
+                            char *, unsigned int,
+                            fsm_output_buff_t *);
 
 /*Custom-defined datatype
 * to define boolean value
@@ -51,6 +59,9 @@ typedef struct tt_entry_{
     /* Size of the input symbol */
     unsigned int transition_key_size;
 
+    /*Callback to execute logic to output value from fsm*/
+    output_fn outp_fn;
+
     /* Next state: The state which is the output
     *  of transition function, i.e. 
     *  f(state_i, input_symbol) = (state_i+1)*/
@@ -77,6 +88,11 @@ struct state_{
 
     /*FSM which the current state belongs to*/
     char fsm[MAX_FSM_NAME_SIZE];
+};
+
+struct fsm_output_buff_{
+    char output_buffer[MAX_FSM_OUTPUT_BUFFER];
+    unsigned int curr_pos;
 };
 
 struct fsm_{
@@ -112,6 +128,10 @@ struct fsm_{
     /*Pointer which point to the current input
     * from input buffer*/
     unsigned int input_buffer_cursor;
+
+    /* If FSM need to produce some output, the output
+    * data shall be stored in this buffer*/
+    fsm_output_buff_t fsm_output_buff;
 };
 
 
@@ -133,6 +153,7 @@ tt_entry_t*
 create_and_insert_new_tt_entry(tt_t *trans_table,
                                 const char *transition_key,
                                 unsigned int sizeof_key,
+                                output_fn outp_fn,
                                 state_t* next_state);
 
 
@@ -143,11 +164,17 @@ fsm_error_t
 execute_fsm(fsm_t *fsm,
             char *input_buffer,
             unsigned int size,
+            fsm_output_buff_t *output_buffer,
             fsm_bool_t *fsm_result);
 
 
+//Generic printing function for printing fsm.
 void
 print_fsm(fsm_t *fsm);
+
+void
+init_fsm_output_buffer(fsm_output_buff_t *fsm_output_buff);
+
 
 /**static(hidden) functions***/
 static inline fsm_bool_t

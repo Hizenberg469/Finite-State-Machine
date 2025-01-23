@@ -7,6 +7,25 @@
 #define modify_var(state,num) state ## num
 
 
+void
+bit_flipper_output_fn_gen(state_t *from, state_t *to,
+                            char *input_buffer,
+                            unsigned int transition_key_size,
+                            fsm_output_buff_t *fsm_output_buff){
+
+    char out;
+    out = (*input_buffer == '1') ? '0' : '1';
+
+    fsm_output_buff->curr_pos += snprintf( fsm_output_buff->output_buffer +
+                                    fsm_output_buff->curr_pos,
+                                    (MAX_FSM_OUTPUT_BUFFER - fsm_output_buff->curr_pos - 1),
+                                    "%s-->%c|%c-->%s\n",
+                                    from->state_name, *input_buffer,
+                                    out, to->state_name);
+
+
+}
+
 
 fsm_t *
 fsm_end_with_strict_pattern_01_or_10(){
@@ -31,11 +50,13 @@ fsm_end_with_strict_pattern_01_or_10(){
     create_and_insert_new_tt_entry(trans_table,
                                     "0",
                                     1,
+                                    bit_flipper_output_fn_gen,
                                     q2);
     
     create_and_insert_new_tt_entry(trans_table,
                                     "1",
                                     1,
+                                    bit_flipper_output_fn_gen,
                                     q1);
 
     //State q1
@@ -43,11 +64,13 @@ fsm_end_with_strict_pattern_01_or_10(){
     create_and_insert_new_tt_entry(trans_table,
                                     "0",
                                     1,
+                                    bit_flipper_output_fn_gen,
                                     q2);
     
     create_and_insert_new_tt_entry(trans_table,
                                     "1",
                                     1,
+                                    bit_flipper_output_fn_gen,
                                     q3);
 
     //State q2
@@ -55,11 +78,13 @@ fsm_end_with_strict_pattern_01_or_10(){
     create_and_insert_new_tt_entry(trans_table,
                                     "0",
                                     1,
+                                    bit_flipper_output_fn_gen,
                                     q3);
 
     create_and_insert_new_tt_entry(trans_table,
                                     "1",
                                     1,
+                                    bit_flipper_output_fn_gen,
                                     q1);
     
     //State q3
@@ -67,11 +92,13 @@ fsm_end_with_strict_pattern_01_or_10(){
     create_and_insert_new_tt_entry(trans_table,
                                     "0",
                                     1,
+                                    bit_flipper_output_fn_gen,
                                     q3);
     
     create_and_insert_new_tt_entry(trans_table,
                                     "1",
                                     1,
+                                    bit_flipper_output_fn_gen,
                                     q3);
 
     return fsm;
@@ -99,28 +126,28 @@ fsm_end_with_00_or_11(){
     tt_t *trans_table = NULL;
     //State q0
     trans_table = &(q0->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "0", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "1", 1, q2);
+    create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "1", 1, NULL,q2);
 
     //State q1
     trans_table = &(q1->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "0", 1, q3);
-    create_and_insert_new_tt_entry(trans_table, "1", 1, q2);
+    create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, q3);
+    create_and_insert_new_tt_entry(trans_table, "1", 1, NULL, q2);
 
     //State q2
     trans_table = &(q2->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "0", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "1", 1, q4);
+    create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "1", 1, NULL, q4);
 
     //State q3
     trans_table = &(q3->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "0", 1, q3);
-    create_and_insert_new_tt_entry(trans_table, "1", 1, q2);
+    create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, q3);
+    create_and_insert_new_tt_entry(trans_table, "1", 1, NULL, q2);
 
     //State q4
     trans_table = &(q4->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "0", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "1", 1, q4);
+    create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "1", 1, NULL, q4);
     
     return fsm;
 }
@@ -141,13 +168,13 @@ fsm_odd_1(){
     tt_t *trans_table = NULL;
     //State q0
     trans_table = &(q0->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "0", 1, q0);  
-    create_and_insert_new_tt_entry(trans_table, "1", 1, q1);
+    create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, q0);  
+    create_and_insert_new_tt_entry(trans_table, "1", 1, NULL, q1);
 
     //State q1
     trans_table = &(q1->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "0", 1, q1);  
-    create_and_insert_new_tt_entry(trans_table, "1", 1, q0);
+    create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, q1);  
+    create_and_insert_new_tt_entry(trans_table, "1", 1, NULL, q0);
 
     return fsm;  
 }
@@ -201,93 +228,93 @@ fsm_balanced_paranthesis_3_levels(){
 
     //State q0 (initial state)
     trans_table = &(q0->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q17);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q17);
 
     //State q1
     trans_table = &(q1->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q2);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q11);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q2);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q11);
 
     //State q2
     trans_table = &(q2->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q3);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q13);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q3);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q13);
 
     //State q3
     trans_table = &(q3->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q17);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q4);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q17);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q4);
 
     //State q4
     trans_table = &(q4->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q17);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q5);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q17);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q5);
 
     //State q5
     trans_table = &(q5->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q17);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q6);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q17);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q6);
 
     //State q6
     trans_table = &(q6->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q7);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q17);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q7);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q17);
 
     //State q7
     trans_table = &(q7->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q8);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q17);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q8);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q17);
 
     //State q8
     trans_table = &(q8->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q9);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q17);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q9);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q17);
 
     //State q9
     trans_table = &(q9->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q17);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q10);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q17);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q10);
 
     //State q10
     trans_table = &(q10->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q17);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q5);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q17);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q5);
 
     //State q11
     trans_table = &(q11->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q12);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q17);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q12);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q17);
 
     //State q12
     trans_table = &(q12->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q17);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q11);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q17);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q11);
 
     //State q13
     trans_table = &(q13->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q17);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q14);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q17);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q14);
 
     //State q14
     trans_table = &(q14->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q15);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q17);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q15);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q17);
 
     //State q15
     trans_table = &(q15->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q16);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q17);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q16);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q17);
 
     //State q16
     trans_table = &(q16->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q17);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q13);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q17);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q13);
 
     //State q17
     trans_table = &(q17->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "(", 1, q17);
-    create_and_insert_new_tt_entry(trans_table, ")", 1, q17);
+    create_and_insert_new_tt_entry(trans_table, "(", 1, NULL, q17);
+    create_and_insert_new_tt_entry(trans_table, ")", 1, NULL, q17);
 
     return fsm;
 }
@@ -321,84 +348,90 @@ fsm_phone_validation_6_digits(){
     tt_t *trans_table = NULL;
     //State q0
     trans_table = &(q0->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "0", 1, q7);
-    create_and_insert_new_tt_entry(trans_table, "1", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "2", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "3", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "4", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "5", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "6", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "7", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "8", 1, q1);
-    create_and_insert_new_tt_entry(trans_table, "9", 1, q1);
+    create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, q7);
+    create_and_insert_new_tt_entry(trans_table, "1", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "2", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "3", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "4", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "5", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "6", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "7", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "8", 1, NULL, q1);
+    create_and_insert_new_tt_entry(trans_table, "9", 1, NULL, q1);
 
     for(int i = 1 ; i <= 6 ; i++){
 
         trans_table = &(fsm->states[i]->state_trans_table);
-        create_and_insert_new_tt_entry(trans_table, "0", 1, fsm->states[i+1]);
-        create_and_insert_new_tt_entry(trans_table, "1", 1, fsm->states[i+1]);
-        create_and_insert_new_tt_entry(trans_table, "2", 1, fsm->states[i+1]);
-        create_and_insert_new_tt_entry(trans_table, "3", 1, fsm->states[i+1]);
-        create_and_insert_new_tt_entry(trans_table, "4", 1, fsm->states[i+1]);
-        create_and_insert_new_tt_entry(trans_table, "5", 1, fsm->states[i+1]);
-        create_and_insert_new_tt_entry(trans_table, "6", 1, fsm->states[i+1]);
-        create_and_insert_new_tt_entry(trans_table, "7", 1, fsm->states[i+1]);
-        create_and_insert_new_tt_entry(trans_table, "8", 1, fsm->states[i+1]);
-        create_and_insert_new_tt_entry(trans_table, "9", 1, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "1", 1, NULL, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "2", 1, NULL, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "3", 1, NULL, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "4", 1, NULL, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "5", 1, NULL, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "6", 1, NULL, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "7", 1, NULL, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "8", 1, NULL, fsm->states[i+1]);
+        create_and_insert_new_tt_entry(trans_table, "9", 1, NULL, fsm->states[i+1]);
 
     }
 
 
     trans_table = &(fsm->states[7]->state_trans_table);
-    create_and_insert_new_tt_entry(trans_table, "0", 1, fsm->states[7]);
-    create_and_insert_new_tt_entry(trans_table, "1", 1, fsm->states[7]);
-    create_and_insert_new_tt_entry(trans_table, "2", 1, fsm->states[7]);
-    create_and_insert_new_tt_entry(trans_table, "3", 1, fsm->states[7]);
-    create_and_insert_new_tt_entry(trans_table, "4", 1, fsm->states[7]);
-    create_and_insert_new_tt_entry(trans_table, "5", 1, fsm->states[7]);
-    create_and_insert_new_tt_entry(trans_table, "6", 1, fsm->states[7]);
-    create_and_insert_new_tt_entry(trans_table, "7", 1, fsm->states[7]);
-    create_and_insert_new_tt_entry(trans_table, "8", 1, fsm->states[7]);
-    create_and_insert_new_tt_entry(trans_table, "9", 1, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "0", 1, NULL, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "1", 1, NULL, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "2", 1, NULL, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "3", 1, NULL, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "4", 1, NULL, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "5", 1, NULL, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "6", 1, NULL, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "7", 1, NULL, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "8", 1, NULL, fsm->states[7]);
+    create_and_insert_new_tt_entry(trans_table, "9", 1, NULL, fsm->states[7]);
     return fsm;
 }
+
 
 int main(){
 
     
     fsm_t *fsm1 = fsm_end_with_strict_pattern_01_or_10();
-    print_fsm(fsm1);
+    // print_fsm(fsm1);
 
-    fsm_t *fsm2 = fsm_end_with_00_or_11();
-    print_fsm(fsm2);
+    // fsm_t *fsm2 = fsm_end_with_00_or_11();
+    // print_fsm(fsm2);
 
-    fsm_t *fsm3 = fsm_odd_1();
-    print_fsm(fsm3);
+    // fsm_t *fsm3 = fsm_odd_1();
+    // print_fsm(fsm3);
 
-    fsm_t *fsm4 = fsm_balanced_paranthesis_3_levels();
-    print_fsm(fsm4);
+    // fsm_t *fsm4 = fsm_balanced_paranthesis_3_levels();
+    // print_fsm(fsm4);
 
-    fsm_t *fsm5 = fsm_phone_validation_6_digits();
-    print_fsm(fsm5);
+    // fsm_t *fsm5 = fsm_phone_validation_6_digits();
+    // print_fsm(fsm5);
 
     /*FSM Algorithm execution*/
 
-    // fsm_bool_t fsm_result;
-    // fsm_error_t fsm_error;
+    fsm_bool_t fsm_result;
+    fsm_error_t fsm_error;
 
-    // fsm_error = execute_fsm(fsm1,
-    //                 "00",
-    //                 strlen("00"),
-    //                 &fsm_result);
+    fsm_output_buff_t fsm_output_buff;
+    init_fsm_output_buffer(&fsm_output_buff);
+
+    fsm_error = execute_fsm(fsm1,
+                    "0101010101",
+                    strlen("0101010101"),
+                    &fsm_output_buff,
+                    &fsm_result);
     
-    // if(fsm_error == FSM_NO_ERROR ){
-    //     if( fsm_result == FSM_TRUE ){
-    //         printf("Input String is Validated\n");
-    //     }
-    //     else{
-    //         printf("Input String is not Valid\n");
-    //     }
-    // }
+    if(fsm_error == FSM_NO_ERROR ){
+        if( fsm_result == FSM_TRUE ){
+            printf("Input String is Validated\n");
+            printf("FSM Output string: \n%s\n", fsm_output_buff.output_buffer);
+        }
+        else{
+            printf("Input String is not Valid\n");
+        }
+    }
 
     return 0;
 }
